@@ -1,0 +1,87 @@
+name:  Autonomous Navigation Launcher
+root: .
+
+tmux_options: -f .tmux.conf
+
+pre_window: cd /app; source install/setup.bash
+
+startup_window: Autonomous Navigation Assignment
+
+# Specifies (by index starting at 0) which pane of the specified window will be selected on project startup. If not set, the first pane is used.
+startup_pane: 2
+
+windows:
+  - gnc_suite_user_terminal:
+      layout: main-horizontal
+      panes:
+        - cd /app;
+          sleep 5;
+          ros2 service list
+
+  - gnc_suite:
+      layout: even-horizontal
+      panes:
+        - ros2 launch /app/src/setup_manager/launch/sim_launch.xml | tee logs_gnc_suite/sim_log.txt
+
+  - px4_gazebo:
+      layout: main-horizontal
+      panes:
+        - cd /setup_repos/PX4-Autopilot;
+          cp -f /app/dds_topics/dds_topics.yaml /setup_repos/PX4-Autopilot/src/modules/uxrce_dds_client/dds_topics.yaml;
+          export GAZEBO_MASTER_URI=http://127.0.0.1:11345;
+          export PX4_HOME_LAT=24.19273163774661;
+          export PX4_HOME_LON=55.10120649904762;
+          export PX4_HOME_ALT=181.0;
+          make px4_sitl gazebo-classic_standard_vtol | tee px4_sitl_log.txt
+
+
+  - micros_ros_agent:
+      - cd /setup_repos/uros_ws;
+        source install/setup.bash; ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888 ROS_DOMAIN_ID=0
+
+  - ros2_bag_recorder:
+      - cd /app;
+        mkdir -p bag_files;
+        cd bag_files;
+        source /setup_repos/uros_ws/install/setup.bash;
+        source /install/setup.bash;
+        ros2 bag record fmu/out/vehicle_local_position
+        sim_rf_target/ned_coordinates
+        fmu/out/vehicle_attitude
+        fmu/out/vehicle_odometry
+        fmu/out/vehicle_global_position
+        filters/airspeed
+        ground_truth_los_publisher/los_angles
+        ground_truth_los_publisher/los_angles_delayed
+        gimbal_simulator/gimbal_output
+        gimbal_los_publisher/los_angles
+        px4_debug/attitude_rpy
+        guidance_manager/pure_pursuit_command_logging
+        guidance_manager/pro_nav_command_command_logging
+        guidance_manager/vehicle_rates_setpoint_command
+        metrics/gnss_zem
+        --storage mcap
+
+  - plotjuggler:
+      - cd /app;
+        sleep 5;
+        source /setup_repos/uros_ws/install/setup.bash;
+        source install/setup.bash;
+        ros2 run plotjuggler plotjuggler --layout src/setup_manager/plotjuggler_layouts/sim_layout1.xml
+
+  - ros_foxglove_bridge:
+      - ros2 launch foxglove_bridge foxglove_bridge_launch.xml
+
+  - web_gui:
+      layout: tiled
+      panes:
+        - cd /app;
+          source install/setup.bash;
+          ros2 launch rosbridge_server rosbridge_websocket_launch.xml
+
+        - cd /app/modules/ros2_web_gui;
+          sleep 3;
+          python3 -m http.server
+
+#  - jsbsim_bridge:
+#    - cd /setup_repos/PX4-Autopilot; make px4_sitl jsbsim_rascal
