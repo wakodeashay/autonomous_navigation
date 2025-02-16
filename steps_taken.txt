@@ -1,0 +1,44 @@
+Steps followed:
+1. Install ros2 humble.
+
+2. Create ros2_ws. Source the workspace. Add source cmd to bashrc.
+
+3. install rosdep:
+--------------
+sudo rosdep init
+rosdep update
+--------------
+
+5. Download and install nav2:
+Check link - https://docs.nav2.org/development_guides/build_docs/index.html#build-instructions
+
+---------------
+source /opt/ros/<distro>/setup.bash
+mkdir -p ~/nav2_ws/src && cd ~/nav2_ws
+git clone https://github.com/ros-navigation/navigation2.git --branch $ROS_DISTRO ./src/navigation2
+rosdep install -y \
+  --from-paths ./src \
+  --ignore-src
+colcon build \
+  --symlink-install
+---------------
+
+6. Install binary Gazebo harmonic packages:
+Check link - https://gazebosim.org/docs/harmonic/ros_installation/#gazebo-harmonic-with-ros-2-humble-iron-or-rolling-use-with-caution
+
+--------------------------
+sudo apt-get update
+sudo apt-get install curl lsb-release gnupg
+
+sudo curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
+sudo apt-get update
+sudo apt-get install gz-harmonic
+
+sudo apt-get install ros-humble-ros-gzharmonic
+--------------------------
+
+7. Install tmux
+---------------------------
+sudo apt install tmux
+---------------------------
